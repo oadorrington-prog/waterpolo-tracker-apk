@@ -16,9 +16,15 @@ jobs:
         sudo apt update
         sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libtinfo5 cmake libffi-dev libssl-dev
     
-    - name: Install Python deps FIRST
+    - name: Install Python deps
       run: |
         pip install --user cython==0.29.36 buildozer
+    
+    - name: Accept Android SDK Licenses
+      run: |
+        mkdir -p ~/.android/licenses
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.android/licenses/android-sdk-license
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.android/licenses/android-sdk-license
     
     - name: Cache
       uses: actions/cache@v4
