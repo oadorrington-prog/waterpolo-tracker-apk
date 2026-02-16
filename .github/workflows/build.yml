@@ -11,36 +11,40 @@ jobs:
       with:
         python-version: '3.9'
     
-    - name: Install system packages
+    - name: Install system deps
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          git zip unzip openjdk-17-jdk python3-pip autoconf \
-          libtool pkg-config zlib1g-dev libncurses5-dev libtinfo5 \
-          cmake libffi-dev libssl-dev libxml2-dev libzip-dev
+        sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libtinfo5 cmake libffi-dev libssl-dev
     
-    - name: Install build tools
+    - name: Download Android Command Line Tools
+      run: |
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        cd $HOME/android-sdk/cmdline-tools
+        wget "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
+        unzip commandlinetools-linux-9477386_latest.zip
+        mv cmdline-tools latest
+    
+    - name: Install Build-Tools 30.0.3 (contains aidl)
+      run: |
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "build-tools;30.0.3" "platforms;android-30"
+        # Accept licenses
+        mkdir -p $HOME/android-sdk/licenses
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" | tee $HOME/android-sdk/licenses/android-sdk-license
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" | tee $HOME/android-sdk/licenses/android-sdk-preview-license
+    
+    - name: Install Python deps
       run: |
         pip install --user Cython==0.29.36 buildozer==1.5.0
     
-    - name: Create license directory
-      run: mkdir -p ~/.android/licenses
-    
-    - name: Accept ALL SDK licenses
-      run: |
-        echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55\n" > ~/.android/licenses/android-sdk-license
-        echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" > ~/.android/licenses/android-sdk-preview-license
-        echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e\n" > ~/.android/licenses/google-gdk-license
-    
     - name: Build APK
       run: |
+        export ANDROID_SDK_ROOT=$HOME/android-sdk
+        export ANDROID_HOME=$HOME/android-sdk
+        export PATH=$PATH:$HOME/android-sdk/build-tools/30.0.3
         buildozer android debug
-      env:
-        USE_SDK_WRAPPER: 1
-        MAX_JOBS: 2
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: waterpolo-tracker-apk
-        path: bin/*.apk*
+        name: waterpolo-apk
+        path: bin/*.apk
