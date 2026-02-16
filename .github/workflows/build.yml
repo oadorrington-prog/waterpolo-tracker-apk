@@ -20,17 +20,30 @@ jobs:
       run: |
         pip install --user cython==0.29.36 buildozer
     
-    - name: Accept Android SDK Licenses
+    - name: Setup Android SDK + Accept ALL Licenses
       run: |
+        # Create full Android SDK environment
         mkdir -p ~/.android/licenses
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
+        
+        # Accept ALL known Android licenses
         echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.android/licenses/android-sdk-license
         echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.android/licenses/android-sdk-license
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> ~/.android/licenses/android-sdk-preview-license
+        
+        # Set environment
+        echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+    
+    - name: Manual Build-Tools Install
+      run: |
+        # Force install stable build-tools that has aidl
+        $HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager "build-tools;30.0.3" "platforms;android-30"
     
     - name: Cache
       uses: actions/cache@v4
       with:
         path: ~/.buildozer
-        key: ${{ runner.os }}-buildozer-v1
+        key: ${{ runner.os }}-buildozer-v2
     
     - name: Build APK
       run: |
