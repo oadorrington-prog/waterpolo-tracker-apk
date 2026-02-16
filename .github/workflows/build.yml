@@ -11,42 +11,37 @@ jobs:
       with:
         python-version: '3.9'
     
-    - name: Install system deps
+    - name: Install deps
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libtinfo5 cmake libffi-dev libssl-dev
+        sudo apt install -y \
+          git zip unzip openjdk-17-jdk python3-pip \
+          autoconf libtool pkg-config zlib1g-dev \
+          libncurses5-dev libtinfo5 cmake libffi-dev libssl-dev
     
-    - name: Install Python deps
+    - name: Install Python packages
       run: |
         pip install --user cython==0.29.36 buildozer
     
-    - name: Setup Android SDK + Accept ALL Licenses
+    - name: Accept licenses BEFORE buildozer runs
       run: |
-        # Create full Android SDK environment
-        mkdir -p ~/.android/licenses
-        mkdir -p $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
-        
-        # Accept ALL known Android licenses
-        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.android/licenses/android-sdk-license
-        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.android/licenses/android-sdk-license
-        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> ~/.android/licenses/android-sdk-preview-license
-        
-        # Set environment
-        echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+        mkdir -p $HOME/android-sdk-license
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $HOME/android-sdk-license/android-sdk-license
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/android-sdk-license/android-sdk-platform-tools-license
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > $HOME/android-sdk-license/google-gdk-license
     
-    - name: Manual Build-Tools Install
-      run: |
-        # Force install stable build-tools that has aidl
-        $HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager "build-tools;30.0.3" "platforms;android-30"
-    
-    - name: Cache
+    - name: Cache everything
       uses: actions/cache@v4
       with:
-        path: ~/.buildozer
-        key: ${{ runner.os }}-buildozer-v2
+        path: |
+          ~/.buildozer
+          $HOME/android-sdk-license
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
     
     - name: Build APK
       run: |
+        export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+        export ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk-r23b
         buildozer android debug
     
     - name: Upload APK
