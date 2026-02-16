@@ -6,46 +6,41 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set Python
+    - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.9'
     
-    - name: Install deps
+    - name: Install system packages
       run: |
-        sudo apt update
-        sudo apt install -y \
-          git zip unzip openjdk-17-jdk python3-pip \
-          autoconf libtool pkg-config zlib1g-dev \
-          libncurses5-dev libtinfo5 cmake libffi-dev libssl-dev
+        sudo apt-get update
+        sudo apt-get install -y \
+          git zip unzip openjdk-17-jdk python3-pip autoconf \
+          libtool pkg-config zlib1g-dev libncurses5-dev libtinfo5 \
+          cmake libffi-dev libssl-dev libxml2-dev libzip-dev
     
-    - name: Install Python packages
+    - name: Install build tools
       run: |
-        pip install --user cython==0.29.36 buildozer
+        pip install --user Cython==0.29.36 buildozer==1.5.0
     
-    - name: Accept licenses BEFORE buildozer runs
+    - name: Create license directory
+      run: mkdir -p ~/.android/licenses
+    
+    - name: Accept ALL SDK licenses
       run: |
-        mkdir -p $HOME/android-sdk-license
-        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $HOME/android-sdk-license/android-sdk-license
-        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/android-sdk-license/android-sdk-platform-tools-license
-        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > $HOME/android-sdk-license/google-gdk-license
-    
-    - name: Cache everything
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.buildozer
-          $HOME/android-sdk-license
-        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55\n" > ~/.android/licenses/android-sdk-license
+        echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" > ~/.android/licenses/android-sdk-preview-license
+        echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e\n" > ~/.android/licenses/google-gdk-license
     
     - name: Build APK
       run: |
-        export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
-        export ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk-r23b
         buildozer android debug
+      env:
+        USE_SDK_WRAPPER: 1
+        MAX_JOBS: 2
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: waterpolo-apk
-        path: bin/*.apk
+        name: waterpolo-tracker-apk
+        path: bin/*.apk*
